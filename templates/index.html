@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Optimizer</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3a5f 0%, #2c5f7f 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2c5f7f 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 30px;
+        }
+        
+        .section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .section h2 {
+            margin-bottom: 15px;
+            color: #2c5f7f;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        label {
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        input, select {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .llm-selector {
+            grid-column: 1 / -1;
+        }
+        
+        .api-key-input {
+            grid-column: 1 / -1;
+            display: none;
+        }
+        
+        .api-key-input.visible {
+            display: flex;
+        }
+        
+        button {
+            grid-column: 1 / -1;
+            padding: 15px;
+            background: linear-gradient(135deg, #1e3a5f 0%, #2c5f7f 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status {
+            grid-column: 1 / -1;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 6px;
+            display: none;
+            margin-top: 15px;
+        }
+        
+        .status.visible {
+            display: block;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .metric-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2c5f7f;
+            margin: 10px 0;
+        }
+        
+        .metric-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .charts {
+            grid-column: 1 / -1;
+        }
+        
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .optimized-code {
+            grid-column: 1 / -1;
+            display: none;
+        }
+        
+        .optimized-code.visible {
+            display: block;
+        }
+        
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Code Optimizer</h1>
+            <p>Optimize your Python code using AI-powered analysis</p>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <h2>Input Code</h2>
+                <textarea id="codeInput" placeholder="Paste your Python code here...">def fibonacci(n):
+    if n <= 1:
+        return n
+    return fibonacci(n-1) + fibonacci(n-2)
+
+result = fibonacci(30)
+print(result)</textarea>
+                
+                <div class="controls">
+                    <div class="control-group">
+                        <label>Iterations:</label>
+                        <input type="number" id="iterations" value="5" min="1" max="20">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Runs per test:</label>
+                        <input type="number" id="runs" value="3" min="1" max="10">
+                    </div>
+                    
+                    <div class="control-group llm-selector">
+                        <label>LLM Provider:</label>
+                        <select id="llmProvider">
+                            <option value="lm_studio">LM Studio</option>
+                            <option value="claude">Claude API</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group api-key-input" id="apiKeyGroup">
+                        <label id="apiKeyLabel">Claude API Key:</label>
+                        <input type="password" id="apiKey" placeholder="sk-ant-...">
+                    </div>
+                    
+                    <button id="optimizeBtn" onclick="startOptimization()">
+                        Optimize Code
+                    </button>
+                    
+                    <div class="status" id="status"></div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Performance Metrics</h2>
+                <div id="metricsDisplay">
+                    <p style="text-align: center; color: #666; padding: 40px;">
+                        Run optimization to see metrics
+                    </p>
+                </div>
+            </div>
+            
+            <div class="section charts">
+                <h2>Optimization Progress</h2>
+                <div class="chart-container">
+                    <div id="cpuChart"></div>
+                </div>
+                <div class="chart-container">
+                    <div id="memoryChart"></div>
+                </div>
+                <div class="chart-container">
+                    <div id="timeChart"></div>
+                </div>
+            </div>
+            
+            <div class="section optimized-code" id="optimizedCodeSection">
+                <h2>Optimized Code</h2>
+                <pre id="optimizedCode"></pre>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let pollInterval = null;
+        let currentTaskId = null;
+        
+        document.getElementById('llmProvider').addEventListener('change', function() {
+            const apiKeyGroup = document.getElementById('apiKeyGroup');
+            
+            if (this.value === 'claude') {
+                apiKeyGroup.classList.add('visible');
+            } else {
+                apiKeyGroup.classList.remove('visible');
+            }
+        });
+        
+        async function startOptimization() {
+            const code = document.getElementById('codeInput').value;
+            const iterations = parseInt(document.getElementById('iterations').value);
+            const runs = parseInt(document.getElementById('runs').value);
+            const llmProvider = document.getElementById('llmProvider').value;
+            const apiKey = document.getElementById('apiKey').value;
+            
+            if (!code.trim()) {
+                showStatus('Please enter some code to optimize', 'error');
+                return;
+            }
+            
+            if (llmProvider === 'claude' && !apiKey.trim()) {
+                showStatus('Please enter your Claude API key', 'error');
+                return;
+            }
+            
+            document.getElementById('optimizeBtn').disabled = true;
+            document.getElementById('optimizedCodeSection').classList.remove('visible');
+            showStatus('Starting optimization...', 'info');
+            
+            const response = await fetch('/optimize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    code: code,
+                    iterations: iterations,
+                    runs: runs,
+                    use_claude: llmProvider === 'claude',
+                    api_key: apiKey
+                })
+            });
+            
+            const result = await response.json();
+            currentTaskId = result.task_id;
+            
+            pollInterval = setInterval(checkStatus, 1000);
+        }
+        
+        async function checkStatus() {
+            if (!currentTaskId) return;
+            
+            const response = await fetch(`/status/${currentTaskId}`);
+            const status = await response.json();
+            
+            if (status.error) {
+                showStatus(status.error, 'error');
+                stopPolling();
+                return;
+            }
+            
+            if (status.status === 'running') {
+                showStatus(`Optimizing... Iteration ${status.current_iteration}`, 'info');
+                updateCharts(status.history);
+            } else if (status.status === 'completed') {
+                showStatus('Optimization completed!', 'success');
+                updateCharts(status.history);
+                updateMetrics(status.best_metrics);
+                showOptimizedCode(status.best_code);
+                stopPolling();
+                document.getElementById('optimizeBtn').disabled = false;
+            } else if (status.status === 'error') {
+                showStatus(status.error || 'Optimization failed', 'error');
+                stopPolling();
+                document.getElementById('optimizeBtn').disabled = false;
+            }
+        }
+        
+        function stopPolling() {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+        }
+        
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = 'status visible ' + type;
+        }
+        
+        function updateMetrics(metrics) {
+            const display = document.getElementById('metricsDisplay');
+            display.innerHTML = `
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">CPU Usage</div>
+                        <div class="metric-value">${metrics.cpu.toFixed(2)}%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Memory</div>
+                        <div class="metric-value">${metrics.memory.toFixed(2)} MB</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Execution Time</div>
+                        <div class="metric-value">${metrics.time.toFixed(4)}s</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function updateCharts(history) {
+            if (!history || history.length === 0) return;
+            
+            const iterations = history.map(h => h.iteration);
+            const cpuData = history.map(h => h.cpu);
+            const memoryData = history.map(h => h.memory);
+            const timeData = history.map(h => h.time);
+            
+            const cpuTrace = {
+                x: iterations,
+                y: cpuData,
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'CPU Usage',
+                line: { color: '#2c5f7f', width: 3 },
+                marker: { size: 8 }
+            };
+            
+            const memoryTrace = {
+                x: iterations,
+                y: memoryData,
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'Memory Usage',
+                line: { color: '#1e3a5f', width: 3 },
+                marker: { size: 8 }
+            };
+            
+            const timeTrace = {
+                x: iterations,
+                y: timeData,
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'Execution Time',
+                line: { color: '#4a7fa0', width: 3 },
+                marker: { size: 8 }
+            };
+            
+            const layout = {
+                margin: { t: 40, r: 40, b: 40, l: 60 },
+                xaxis: { title: 'Iteration' },
+                font: { family: 'Segoe UI, sans-serif' }
+            };
+            
+            Plotly.newPlot('cpuChart', [cpuTrace], {
+                ...layout,
+                yaxis: { title: 'CPU Usage (%)' },
+                title: 'CPU Usage Over Iterations'
+            });
+            
+            Plotly.newPlot('memoryChart', [memoryTrace], {
+                ...layout,
+                yaxis: { title: 'Memory (MB)' },
+                title: 'Memory Usage Over Iterations'
+            });
+            
+            Plotly.newPlot('timeChart', [timeTrace], {
+                ...layout,
+                yaxis: { title: 'Time (seconds)' },
+                title: 'Execution Time Over Iterations'
+            });
+        }
+        
+        function showOptimizedCode(code) {
+            document.getElementById('optimizedCode').textContent = code;
+            document.getElementById('optimizedCodeSection').classList.add('visible');
+        }
+    </script>
+</body>
+</html>
